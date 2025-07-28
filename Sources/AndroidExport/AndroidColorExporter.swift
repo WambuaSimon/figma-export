@@ -76,7 +76,8 @@ final public class AndroidColorExporter: AndroidExporter {
         let colors: [[String: String]] = colorPairs.map {
             [
                 "functionName": $0.light.name.lowerCamelCased(),
-                "name": $0.light.name
+                "name": $0.light.name,
+                "hexValue": $0.light.hex.replacingOccurrences(of: "#", with: "")
             ]
         }
 

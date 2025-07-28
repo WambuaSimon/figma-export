@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:figma-export}",
+            "name": "Debug figma-export",
+            "program": "${workspaceFolder:figma-export}/.build/debug/figma-export",
+            "preLaunchTask": "swift: Build Debug figma-export"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:figma-export}",
+            "name": "Release figma-export",
+            "program": "${workspaceFolder:figma-export}/.build/release/figma-export",
+            "preLaunchTask": "swift: Build Release figma-export"
+        }
+    ]
+}
