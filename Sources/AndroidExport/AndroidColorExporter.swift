@@ -15,24 +15,49 @@ final public class AndroidColorExporter: AndroidExporter {
     }
     
     public func export(colorPairs: [AssetPair<Color>]) throws -> [FileContents] {
+        // Debug: Print all incoming color names
+        print("--- RAW COLOR NAMES FROM FIGMA ---")
+        colorPairs.forEach { print($0.light.name) }
+        print("------------------------------------")
 
-        // values/colors.xml
-        let lightFile = try makeColorsFileContents(colorPairs: colorPairs, dark: false)
+        // Filter to only keep ds_sys_ and ds_state_layers_ colors
+        let filteredColorPairs = colorPairs.filter {
+            let lowercasedName = $0.light.name.lowercased()
+            return lowercasedName.hasPrefix("ds_sys_") || lowercasedName.hasPrefix("ds_state_layers_")
+        }
+        
+        // Debug: Show filtering results
+        let filteredOutColors = colorPairs.filter {
+            let lowercasedName = $0.light.name.lowercased()
+            return !(lowercasedName.hasPrefix("ds_sys_") || lowercasedName.hasPrefix("ds_state_layers_"))
+        }
+        
+        print("--- FILTERED OUT COLORS ---")
+        filteredOutColors.forEach { print($0.light.name) }
+        print("--- KEPT COLORS (\(filteredColorPairs.count) total) ---")
+        filteredColorPairs.forEach { 
+            let color = $0.light
+            print("\(color.name) - Alpha: \(color.alpha), ComposeHex: \(color.composeHexValue)") 
+        }
+        print("------------------------------------")
+
+        // Generate XML colors file
+        let lightFile = try makeColorsFileContents(colorPairs: filteredColorPairs, dark: false)
         var result = [lightFile]
 
-        // values-night/colors.xml
-        if colorPairs.contains(where: { $0.dark != nil }) {
-            let darkFile = try makeColorsFileContents(colorPairs: colorPairs, dark: true)
+        // Generate dark mode XML if needed
+        if filteredColorPairs.contains(where: { $0.dark != nil }) {
+            let darkFile = try makeColorsFileContents(colorPairs: filteredColorPairs, dark: true)
             result.append(darkFile)
         }
 
-        // Colors.kt
+        // Generate Compose Colors.kt file
         if let packageName = output.packageName,
            let outputDirectory = output.composeOutputDirectory,
            let xmlResourcePackage = output.xmlResourcePackage {
 
             let composeFile = try makeComposeColorsFileContents(
-                colorPairs: colorPairs,
+                colorPairs: filteredColorPairs,
                 package: packageName,
                 xmlResourcePackage: xmlResourcePackage,
                 outputDirectory: outputDirectory
@@ -77,7 +102,7 @@ final public class AndroidColorExporter: AndroidExporter {
             [
                 "functionName": $0.light.name.lowerCamelCased(),
                 "name": $0.light.name,
-                "hexValue": $0.light.hex.replacingOccurrences(of: "#", with: "")
+                "hexValue": $0.light.composeHexValue
             ]
         }
 
@@ -111,5 +136,16 @@ private extension Color {
             result = "#\(aa)\(rr)\(gg)\(bb)"
         }
         return result
+    }
+    
+    // Generate hex value for Jetpack Compose Color constructor
+    var composeHexValue: String {
+        let aa = doubleToHex(alpha)
+        let rr = doubleToHex(red)
+        let gg = doubleToHex(green)
+        let bb = doubleToHex(blue)
+        
+        // Always include alpha for Jetpack Compose (ARGB format)
+        return "\(aa)\(rr)\(gg)\(bb)"
     }
 }
